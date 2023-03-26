@@ -1,0 +1,63 @@
+service: pp1grupo11backend
+
+frameworkVersion: ">=1.10.0"
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  memorySize: 512
+  timeout: 10
+  stage: dev
+  region: us-east-1
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - s3:*
+          Resource: "*"
+        - Effect: "Allow"
+          Action:
+            - "rekognition:*"
+          Resource: "*"   
+        - Effect: "Allow"
+          Action:
+            - "dynamodb:*"
+          Resource: "*"   
+
+
+resources: # CloudFormation template syntax from here on.
+  Resources:
+    photos:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:service}-${self:provider.stage}-photos
+    users:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: users
+        AttributeDefinitions:
+          - AttributeName: email
+            AttributeType: S
+        KeySchema:
+          - AttributeName: email
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 2
+          WriteCapacityUnits: 2
+
+functions:
+  register:
+    handler: handler.register
+    events:
+      - http:
+          path: user
+          method: put
+          cors: true # <-- CORS!
+  login:
+    handler: handler.login
+    events:
+      - http:
+          path: user
+          method: post
+          cors: true # <-- CORS!         
