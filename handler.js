@@ -6,6 +6,28 @@ const dynamodb = new AWS.DynamoDB.DocumentClient();
 
 exports.register = async (event, context, callback) => {//verificar si el usuario existe
     const data = JSON.parse(event.body);
+    
+    const result = await dynamodb.get({
+        TableName: 'users',
+        Key: {
+            email: data.email
+        }
+    }).promise();
+
+    const user = result.Item;
+
+    if(user){
+        return {
+            statusCode: 403,
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Credentials': true,
+            },
+            body: JSON.stringify({
+                error:"user already exists"
+            })
+        };
+    }
 
     const newUser = {
         name: data.name,
@@ -162,12 +184,14 @@ exports.login = async (event, context, callback) => {
         };
     }
     return {
-        statusCode: 200,
+        statusCode: 403,
         headers: {
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Credentials': true,
         },
-        body: "Not found"
+        body: JSON.stringify({
+            error:"user not found"
+        })
     };
 
 
