@@ -75,7 +75,7 @@ exports.login = async (event, context, callback) => {
     const user = result.Item;
 
     let authWithPhoto = false
-    if (data.photo) {
+    if (user && data.photo) {
         const buf = Buffer.from(data.photo.replace(/^data:image\/\w+;base64,/, ""), 'base64')
         await s3.putObject({
             Key: data.email + '-tmp',
@@ -100,7 +100,12 @@ exports.login = async (event, context, callback) => {
             }
         };
 
-        const result = await rekognition.compareFaces(params).promise();
+        try {
+            const result = await rekognition.compareFaces(params).promise();
+            authWithPhoto = result.FaceMatches.some(fm => fm.Similarity > 90)
+        } catch(e) {
+            authWithPhoto = false
+        }
         /*
 {
     "result": {
@@ -167,7 +172,7 @@ exports.login = async (event, context, callback) => {
     }
 }
         */
-        authWithPhoto = result.FaceMatches.some(fm => fm.Similarity > 90)
+
     }
 
 
